@@ -21,6 +21,6 @@ private:
 public:
     void MatchOrder(const Order order);
 
-}
+};
 
 #endif //IMPLEMENTATION_MATCHINGENGINE_H

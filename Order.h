@@ -19,13 +19,13 @@ struct Order {
         BUY=2
     };
 
-    enum Instrument{
-        DEFAULT=' ',
-        ROSE='Rose',
-        LAVENDER='Lavender',
-        LOTUS = 'Lotus',
-        TULIP = 'Tulip',
-        ORCHID = 'Orchid'
+    enum  Instrument{
+        DEFAULT=0,
+        ROSE=1,
+        LAVENDER=2,
+        LOTUS = 3,
+        TULIP = 4,
+        ORCHID = 5
     };
 
     std::string ID;

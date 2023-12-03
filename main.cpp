@@ -28,12 +28,12 @@ int main() {
         getline(ss, quantity, ',');
         getline(ss, price, ',');
 
-//        Order order(id, stod(price), stoi(quantity));
-//        RoseOrders.addOrder(order, side);
+        Order order(id, stod(price), stoi(quantity),side);
+        RoseOrders.addOrder(order);
     }
 
     // Display the orders
-//    RoseOrders.displayOrders();
+    RoseOrders.displayOrders();
 
     return 0;
 }
