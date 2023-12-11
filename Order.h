@@ -19,23 +19,14 @@ struct Order {
         BUY=1
     };
 
-    enum  Instrument{
-        Rose=1,
-        Lavender=2,
-        Lotus = 3,
-        Tulip = 4,
-        Orchid = 5
-    };
-
     std::string Client_ID;
     float price;
     int quantity;
     State state;
-    std::string reason;
-    Instrument instrument;
+    std::string reason,instrument;
     int Side;
 
-    Order(std::string i,float p, int q,int side,State st=NEW,Instrument inst=Rose) :Client_ID(i), price(p), quantity(q), Side(side) ,state(st),reason(""),instrument(inst){}
+    Order(std::string i,float p, int q,int side,std::string inst,State st=NEW) :Client_ID(i), price(p), quantity(q), Side(side) ,state(st),reason(""),instrument(inst){}
 
     struct BuyCompare {
         bool operator() (const Order& lhs, const Order& rhs) const{

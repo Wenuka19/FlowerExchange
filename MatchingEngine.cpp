@@ -8,60 +8,36 @@
 #include "MatchingEngine.h"
 #include "Order.h"
 
-Order::Instrument stringToInstrument(const std::string& str) {
-    static const std::unordered_map<std::string, Order::Instrument> instrumentMap = {
-            {"Rose", Order::Rose},
-            {"Lavender", Order::Lavender},
-            {"Lotus", Order::Lotus},
-            {"Tulip", Order::Tulip},
-            {"Orchid", Order::Orchid}
-    };
-
-    auto it = instrumentMap.find(str);
-    if (it != instrumentMap.end()) {
-        return it->second;
-    } else {
-        // Handle the case where the string is not a valid instrument
-        std::cerr << "Error: Invalid instrument string" << std::endl;
-        return static_cast<Order::Instrument>(0);  // Return a default or invalid value
-    }
-}
-
 
 void MatchingEngine::MatchOrder(Order order){
     if (order.state == Order::REJECTED){
         execReport.push_back(order);
     }else{
         OrderBook* orderBook;
-        switch (order.instrument) {
-                case Order::Rose:
-                    orderBook = &RoseOrders;
-                    break;
+           if (order.instrument == "Rose"){
+               orderBook = &RoseOrders;
+           }
 
-                case Order::Lavender:
-                    orderBook = &LavenderOrders;
-                    break;
+           else if (order.instrument == "Lavender"){
+               orderBook = &LavenderOrders;
+           }
 
-                case Order::Orchid:
-                    orderBook = &OrchidOrders;
-                    break;
-
-                case Order::Lotus:
-                    orderBook = &LotusOrders;
-                    break;
-
-                case Order::Tulip:
-                    orderBook = &TulipOrders;
-                    break;
-                default:
-                    break;
+            else if (order.instrument == "Orchid"){
+               orderBook = &OrchidOrders;
             }
 
-        if (order.Side == Order::BUY){
-            matchBuyOrder(*orderBook,order,execReport);
-        }else{
-            matchSellOrder(*orderBook,order,execReport);
-        }
+            else if(order.instrument ==  "Lotus"){
+                orderBook  = &LotusOrders;
+            }
+
+            else if (order.instrument == "Tulip"){
+               orderBook = &TulipOrders;
+           }
+            if (order.Side == Order::BUY){
+                matchBuyOrder(*orderBook,order,execReport);
+            }else{
+                matchSellOrder(*orderBook,order,execReport);
+            }
     }
 }
 
@@ -75,9 +51,7 @@ void MatchingEngine::processOrder(const std::string& line){
     ss.ignore();
     getline(ss, quantity, ',');
     getline(ss, price, ',');
-    Order valid_order = Order(id, std::stof(price.c_str()), stoi(quantity),side);
-    valid_order.instrument = stringToInstrument(instrument);
-
+    Order valid_order = Order(id, std::stof(price.c_str()), stoi(quantity),side,instrument);
     MatchOrder(valid_order);
 }
 
@@ -103,7 +77,7 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
                 newBuyOrder.price = sellOrder->price;
                 newBuyOrder.quantity = sellOrder->quantity;
                 execReport.push_back(newBuyOrder);
-                Order remaining_ord = Order("CLS1",ori_price,remaining_q,Order::BUY,Order::PFILL,newBuyOrder.instrument);
+                Order remaining_ord = Order(newBuyOrder.Client_ID,ori_price,remaining_q,Order::BUY,newBuyOrder.instrument,Order::PFILL);
                 sellOrder->state = Order::FILL;
                 execReport.push_back(*sellOrder);
                 newBuyOrder = remaining_ord;
@@ -115,7 +89,7 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
                 newBuyOrder.price = sellOrder->price;
                 execReport.push_back(newBuyOrder);
                 int remaining_q = sellOrder->quantity - newBuyOrder.quantity;
-                Order new_ord = Order("CLSD",sellOrder->price,remaining_q,Order::SELL,Order::NEW,sellOrder->instrument);
+                Order new_ord = Order(sellOrder->Client_ID,sellOrder->price,remaining_q,Order::SELL,sellOrder->instrument,Order::NEW);
                 orderBook.addOrder(new_ord);
                 sellOrder->state = Order::PFILL;
                 execReport.push_back(*sellOrder);
@@ -165,9 +139,7 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
                 newSellOrder.price = buyOrder->price;
                 newSellOrder.quantity = buyOrder->quantity;
                 execReport.push_back(newSellOrder);
-                Order new_ord = Order("CLSB1", ori_price, remaining_q, Order::SELL, Order::PFILL,
-                                      newSellOrder.instrument);
-//                orderBook.addOrder(new_ord);
+                Order new_ord = Order(newSellOrder.Client_ID, ori_price, remaining_q, Order::SELL, newSellOrder.instrument,Order::PFILL);
                 buyOrder->state = Order::FILL;
                 execReport.push_back(*buyOrder);
                 newSellOrder = new_ord;
@@ -177,8 +149,7 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
                 newSellOrder.price = buyOrder->price;
                 execReport.push_back(newSellOrder);
                 int remaining_q = buyOrder->quantity - newSellOrder.quantity;
-                Order new_ord = Order("CLSB2", buyOrder->price, remaining_q, Order::BUY, Order::NEW,
-                                      buyOrder->instrument);
+                Order new_ord = Order(buyOrder->Client_ID, buyOrder->price, remaining_q, Order::BUY, buyOrder->instrument,Order::NEW);
                 buyOrder->state = Order::PFILL;
                 execReport.push_back(*buyOrder);
                 break;

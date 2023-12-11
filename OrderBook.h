@@ -11,6 +11,7 @@
 
 class OrderBook {
 private:
+    int ID = 0;
     std::set<Order, Order::BuyCompare> buyOrders;
     std::set<Order, Order::SellCompare> sellOrders;
 
