@@ -5,7 +5,9 @@
 #ifndef IMPLEMENTATION_ORDERBOOK_H
 #define IMPLEMENTATION_ORDERBOOK_H
 #include <set>
+#include <optional>
 #include "Order.h"
+#include "vector"
 
 class OrderBook {
 private:
@@ -15,6 +17,10 @@ private:
 public:
     void addOrder(const Order& order);
     void displayOrders() const;
+    std::optional<Order> getSellOrder();
+    void removeSellOrderMatch();
+    std::optional<Order> getBuyOrder();
+    void removeBuyOrderMatch();
 };
 
 #endif // ORDERBOOK_H

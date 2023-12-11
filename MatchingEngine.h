@@ -3,6 +3,7 @@
 //
 #include "OrderBook.h"
 #include "Order.h"
+#include <vector>
 
 #ifndef IMPLEMENTATION_MATCHINGENGINE_H
 #define IMPLEMENTATION_MATCHINGENGINE_H
@@ -16,10 +17,14 @@ private:
     OrderBook TulipOrders;
     OrderBook OrchidOrders;
 
-    Order validateOrder(const std::string& line);
+    std::vector<Order> execReport;
+    void MatchOrder(Order order);
 
 public:
-    void MatchOrder(const Order order);
+    void processOrder(const std::string& line);
+    void matchBuyOrder(OrderBook& sellOrderBook, Order& newBuyOrder, std::vector<Order>& execReport);
+    void matchSellOrder(OrderBook& buyOrderBook, Order& newSellOrder, std::vector<Order>& execReport);
+    void PrintReport();
 
 };
 

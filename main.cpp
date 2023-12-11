@@ -4,8 +4,10 @@
 #include <string>
 #include "Order.h"
 #include "OrderBook.h"
+#include "MatchingEngine.h"
 
 int main() {
+    MatchingEngine Matching_Engine;
     OrderBook RoseOrders;
 
     std::ifstream file("order.csv");
@@ -17,23 +19,11 @@ int main() {
     }
 
     while (getline(file, line)) {
-        std::cout << "Processing line: " << line << std::endl;
-        std::stringstream ss(line);
-        std::string id, price, quantity, date,instrument;
-        int side;
-        getline(ss, id, ',');
-        getline(ss,instrument,',');
-        ss>>side;
-        ss.ignore();
-        getline(ss, quantity, ',');
-        getline(ss, price, ',');
+        Matching_Engine.processOrder(line);
 
-        Order order(id, stod(price), stoi(quantity),side);
-        RoseOrders.addOrder(order);
     }
-
-    // Display the orders
-    RoseOrders.displayOrders();
+    std::cout<<"PRINTING REPORT"<<"\n";
+    Matching_Engine.PrintReport();
 
     return 0;
 }
