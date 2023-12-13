@@ -11,6 +11,7 @@
 
 class MatchingEngine {
 private:
+    int orders_processed=0;
     OrderBook RoseOrders;
     OrderBook LavenderOrders;
     OrderBook LotusOrders;
@@ -25,6 +26,7 @@ public:
     void matchBuyOrder(OrderBook& sellOrderBook, Order& newBuyOrder, std::vector<Order>& execReport);
     void matchSellOrder(OrderBook& buyOrderBook, Order& newSellOrder, std::vector<Order>& execReport);
     void PrintReport();
+    void WriteToFile(const std::string& filename);
 
 };
 

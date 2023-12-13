@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <unordered_map>
 #include "MatchingEngine.h"
 #include "Order.h"
@@ -41,7 +42,9 @@ void MatchingEngine::MatchOrder(Order order){
     }
 }
 
+
 void MatchingEngine::processOrder(const std::string& line){
+    // TODO: Add validation
     std::stringstream ss(line);
     std::string id, price, quantity, date,instrument;
     int side;
@@ -51,7 +54,8 @@ void MatchingEngine::processOrder(const std::string& line){
     ss.ignore();
     getline(ss, quantity, ',');
     getline(ss, price, ',');
-    Order valid_order = Order(id, std::stof(price.c_str()), stoi(quantity),side,instrument);
+    std::string order_id = "ord"+ std::to_string(++orders_processed);
+    Order valid_order = Order(id,order_id, std::stof(price.c_str()), stoi(quantity),side,instrument);
     MatchOrder(valid_order);
 }
 
@@ -77,7 +81,7 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
                 newBuyOrder.price = sellOrder->price;
                 newBuyOrder.quantity = sellOrder->quantity;
                 execReport.push_back(newBuyOrder);
-                Order remaining_ord = Order(newBuyOrder.Client_ID,ori_price,remaining_q,Order::BUY,newBuyOrder.instrument,Order::PFILL);
+                Order remaining_ord = Order(newBuyOrder.Client_ID,newBuyOrder.order_ID,ori_price,remaining_q,Order::BUY,newBuyOrder.instrument,Order::PFILL);
                 sellOrder->state = Order::FILL;
                 execReport.push_back(*sellOrder);
                 newBuyOrder = remaining_ord;
@@ -89,7 +93,7 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
                 newBuyOrder.price = sellOrder->price;
                 execReport.push_back(newBuyOrder);
                 int remaining_q = sellOrder->quantity - newBuyOrder.quantity;
-                Order new_ord = Order(sellOrder->Client_ID,sellOrder->price,remaining_q,Order::SELL,sellOrder->instrument,Order::NEW);
+                Order new_ord = Order(sellOrder->Client_ID,sellOrder->order_ID,sellOrder->price,remaining_q,Order::SELL,sellOrder->instrument,Order::NEW);
                 orderBook.addOrder(new_ord);
                 sellOrder->state = Order::PFILL;
                 execReport.push_back(*sellOrder);
@@ -98,8 +102,7 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
             else{
                 orderBook.addOrder(newBuyOrder);
                 if (newBuyOrder.state==Order::NEW){
-                execReport.push_back(newBuyOrder);
-
+                    execReport.push_back(newBuyOrder);
                 }
                 break;
             }
@@ -113,8 +116,6 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
         }
 
     }
-    orderBook.displayOrders();
-
 }
 
 void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, std::vector<Order>& execReport) {
@@ -139,7 +140,7 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
                 newSellOrder.price = buyOrder->price;
                 newSellOrder.quantity = buyOrder->quantity;
                 execReport.push_back(newSellOrder);
-                Order new_ord = Order(newSellOrder.Client_ID, ori_price, remaining_q, Order::SELL, newSellOrder.instrument,Order::PFILL);
+                Order new_ord = Order(newSellOrder.Client_ID, newSellOrder.order_ID,ori_price, remaining_q, Order::SELL, newSellOrder.instrument,Order::PFILL);
                 buyOrder->state = Order::FILL;
                 execReport.push_back(*buyOrder);
                 newSellOrder = new_ord;
@@ -149,7 +150,8 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
                 newSellOrder.price = buyOrder->price;
                 execReport.push_back(newSellOrder);
                 int remaining_q = buyOrder->quantity - newSellOrder.quantity;
-                Order new_ord = Order(buyOrder->Client_ID, buyOrder->price, remaining_q, Order::BUY, buyOrder->instrument,Order::NEW);
+                Order new_ord = Order(buyOrder->Client_ID, newSellOrder.order_ID,buyOrder->price, remaining_q, Order::BUY, buyOrder->instrument,Order::NEW);
+                orderBook.addOrder(new_ord);
                 buyOrder->state = Order::PFILL;
                 execReport.push_back(*buyOrder);
                 break;
@@ -173,11 +175,10 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
 
 
     }
-    orderBook.displayOrders();
 }
 
 void MatchingEngine::PrintReport() {
-    std::cout << std::setw(10) << "Cl. Ord. ID" << std::setw(15) << "Instrument" << std::setw(10) << "Side"
+    std::cout << std::setw(10) << "Order ID"<<std::setw(15) << "Cl. Ord. ID" << std::setw(15) << "Instrument" << std::setw(10) << "Side"
               << std::setw(12) << "ExecStatus" << std::setw(10) << "Quantity" << std::setw(10) << "Price" << std::endl;
 
     for (const auto& order : execReport) {
@@ -191,9 +192,39 @@ void MatchingEngine::PrintReport() {
         }else if (order.state==Order::REJECTED){
             execStatus="Rejected";
         }
-        std::cout << std::setw(10) << order.Client_ID << std::setw(15) << order.instrument
+        std::cout << std::setw(10) << order.order_ID<< std::setw(15) << order.Client_ID<< std::setw(15) << order.instrument
                   << std::setw(10) << order.Side << std::setw(12) << execStatus << std::setw(10) << order.quantity
                   << std::setw(10) << std::fixed << std::setprecision(2)<<order.price << std::endl;
     }
 
+}
+
+void MatchingEngine::WriteToFile(const std::string& filename) {
+    std::ofstream outputFile(filename);
+
+    if (!outputFile.is_open()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+
+    outputFile << "Order ID,Cl. Ord. ID,Instrument,Side,ExecStatus,Quantity,Price" << std::endl;
+
+    for (const auto& order : execReport) {
+        std::string execStatus;
+        if (order.state == Order::NEW) {
+            execStatus = "New";
+        } else if (order.state == Order::FILL) {
+            execStatus = "Fill";
+        } else if (order.state == Order::PFILL) {
+            execStatus = "PFill";
+        } else if (order.state == Order::REJECTED) {
+            execStatus = "Rejected";
+        }
+
+        outputFile << order.order_ID << "," << order.Client_ID << "," << order.instrument
+                   << "," << order.Side << "," << execStatus << "," << order.quantity
+                   << "," << std::fixed << std::setprecision(2) << order.price << std::endl;
+    }
+
+    outputFile.close();
 }

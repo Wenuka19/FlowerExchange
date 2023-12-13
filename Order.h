@@ -19,6 +19,7 @@ struct Order {
         BUY=1
     };
 
+    std::string order_ID;
     std::string Client_ID;
     float price;
     int quantity;
@@ -26,7 +27,7 @@ struct Order {
     std::string reason,instrument;
     int Side;
 
-    Order(std::string i,float p, int q,int side,std::string inst,State st=NEW) :Client_ID(i), price(p), quantity(q), Side(side) ,state(st),reason(""),instrument(inst){}
+    Order(std::string i,std::string ord_id,float p, int q,int side,std::string inst,State st=NEW) :Client_ID(i),order_ID(ord_id), price(p), quantity(q), Side(side) ,state(st),reason(""),instrument(inst){}
 
     struct BuyCompare {
         bool operator() (const Order& lhs, const Order& rhs) const{
