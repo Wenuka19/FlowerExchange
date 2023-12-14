@@ -47,7 +47,7 @@ void MatchingEngine::MatchOrder(Order order){
 
 
 void MatchingEngine::processOrder(const std::string& line){
-    
+
     std::istringstream iss(line);
 
     std::string id, instrument, sideStr, quantityStr, priceStr, orderId;
@@ -61,15 +61,6 @@ void MatchingEngine::processOrder(const std::string& line){
     getline(iss, quantityStr, ',');
     getline(iss, priceStr, ',');
     getline(iss, orderId, ',');
-
-    // TEST :
-    // std::cout << "id: " << id << std::endl;
-    // std::cout << "instrument: " << instrument << std::endl;
-    // std::cout << "sideStr: " << sideStr << std::endl;
-    // std::cout << "quantityStr: " << quantityStr << std::endl;
-    // std::cout << "priceStr: " << priceStr << std::endl;
-    // std::cout << "orderId: " << orderId << "\n"<< std::endl;
-    
 
     // Validate the parameters
     bool isValid = true;
@@ -124,21 +115,6 @@ void MatchingEngine::processOrder(const std::string& line){
     // // Create a valid order and pass it to MatchOrder
     Order validOrder(id, orderId, price, quantity, side, instrument);
     MatchOrder(validOrder);
-    
-    // std::stringstream ss(line);
-    // std::string id, price, quantity, date,instrument;
-    // int side;
-    // getline(ss, id, ',');
-    // getline(ss,instrument,',');
-    // ss>>side;
-    // ss.ignore();
-    // getline(ss, quantity, ',');
-    // getline(ss, price, ',');
-    // std::string order_id = "ord"+ std::to_string(++orders_processed);
-
-
-    // Order valid_order = Order(id,order_id, std::stof(price.c_str()), stoi(quantity),side,instrument);
-    // MatchOrder(valid_order);
 }
 
 void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std::vector<Order>& execReport){
