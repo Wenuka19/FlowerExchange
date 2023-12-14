@@ -2,9 +2,12 @@
 // Created by wenuka on 10/30/23.
 //
 
+#include <string> // Add the missing header file
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
+#include <unordered_set>
 #include <unordered_map>
 #include "MatchingEngine.h"
 #include "Order.h"
@@ -44,19 +47,98 @@ void MatchingEngine::MatchOrder(Order order){
 
 
 void MatchingEngine::processOrder(const std::string& line){
-    // TODO: Add validation
-    std::stringstream ss(line);
-    std::string id, price, quantity, date,instrument;
-    int side;
-    getline(ss, id, ',');
-    getline(ss,instrument,',');
-    ss>>side;
-    ss.ignore();
-    getline(ss, quantity, ',');
-    getline(ss, price, ',');
-    std::string order_id = "ord"+ std::to_string(++orders_processed);
-    Order valid_order = Order(id,order_id, std::stof(price.c_str()), stoi(quantity),side,instrument);
-    MatchOrder(valid_order);
+    
+    std::istringstream iss(line);
+
+    std::string id, instrument, sideStr, quantityStr, priceStr, orderId;
+    int side, quantity;
+    double price;
+
+    // Separate the input line into parameters
+    getline(iss, id, ','); // Fix the arguments of getline function
+    getline(iss, instrument, ',');
+    getline(iss, sideStr, ',');
+    getline(iss, quantityStr, ',');
+    getline(iss, priceStr, ',');
+    getline(iss, orderId, ',');
+
+    // TEST :
+    // std::cout << "id: " << id << std::endl;
+    // std::cout << "instrument: " << instrument << std::endl;
+    // std::cout << "sideStr: " << sideStr << std::endl;
+    // std::cout << "quantityStr: " << quantityStr << std::endl;
+    // std::cout << "priceStr: " << priceStr << std::endl;
+    // std::cout << "orderId: " << orderId << "\n"<< std::endl;
+    
+
+    // Validate the parameters
+    bool isValid = true;
+    std::string rejectionReason;
+
+    // Validate Client Order ID
+    if (id.empty()) {
+        isValid = false;
+        rejectionReason += "Client Order ID is missing. ";
+    } else if (id.length() > 7) {
+        isValid = false;
+        rejectionReason += "Client Order ID exceeds the maximum length of 7 characters. ";
+    }
+
+    // Validate Instrument
+    std::unordered_set<std::string> validInstruments = {"Rose", "Lavender", "Lotus", "Tulip", "Orchid"};
+    if (validInstruments.find(instrument) == validInstruments.end()) {
+        isValid = false;
+        rejectionReason += "Invalid Instrument. ";
+    }
+
+    // Validate Side
+    if (sideStr != "1" && sideStr != "2") {
+        isValid = false;
+        rejectionReason += "Invalid Side. ";
+    } else {
+        side = std::stoi(sideStr);
+    }
+
+    // Validate Price
+    price = std::stod(priceStr);
+    if (price <= 0.0) {
+        isValid = false;
+        rejectionReason += "Price must be greater than 0. ";
+    }
+
+    // Validate Quantity
+    quantity = std::stoi(quantityStr);
+    if (quantity < 10 || quantity > 1000 || quantity % 10 != 0) {
+        isValid = false;
+        rejectionReason += "Quantity must be a multiple of 10 and between 10 and 1000. ";
+    }
+
+    // If any validation failed, generate a Rejected execution report
+    if (!isValid) {
+        Order rejectedOrder(id, orderId, price, quantity, side, instrument, Order::REJECTED);
+        // rejectedOrder.rejectionReason = rejectionReason;
+        execReport.push_back(rejectedOrder);
+        return;
+    }
+
+    // // Create a valid order and pass it to MatchOrder
+    Order validOrder(id, orderId, price, quantity, side, instrument);
+    MatchOrder(validOrder);
+    
+    // std::stringstream ss(line);
+    // std::string id, price, quantity, date,instrument;
+    // int side;
+    // getline(ss, id, ',');
+    // getline(ss,instrument,',');
+    // ss>>side;
+    // ss.ignore();
+    // getline(ss, quantity, ',');
+    // getline(ss, price, ',');
+    // std::string order_id = "ord"+ std::to_string(++orders_processed);
+
+
+    // Order valid_order = Order(id,order_id, std::stof(price.c_str()), stoi(quantity),side,instrument);
+    // MatchOrder(valid_order);
 }
 
 void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std::vector<Order>& execReport){
