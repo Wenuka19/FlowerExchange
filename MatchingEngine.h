@@ -19,6 +19,10 @@ private:
     OrderBook OrchidOrders;
 
     std::vector<Order> execReport;
+public:
+    const std::vector<Order> &getExecReport() const;
+
+private:
     void MatchOrder(Order order);
 
 public:
@@ -27,6 +31,8 @@ public:
     void matchSellOrder(OrderBook& buyOrderBook, Order& newSellOrder, std::vector<Order>& execReport);
     void PrintReport();
     void WriteToFile(const std::string& filename);
+    std::string transaction_time();
+    void add_to_report(Order &order);
 
 };
 
