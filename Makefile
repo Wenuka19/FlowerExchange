@@ -1,5 +1,6 @@
-CXX := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra
+CC = g++
+CFLAGS = -std=c++17 -Wall
+LDFLAGS = -pthread 
 
 SERVER := server
 CLIENT := client
