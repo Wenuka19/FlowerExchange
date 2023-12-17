@@ -15,33 +15,38 @@
 
 void MatchingEngine::MatchOrder(Order order){
     if (order.state == Order::REJECTED){
+        order.reason = "Invalid order parameters"; // Add the reason for rejection
         execReport.push_back(order);
     }else{
+        //std::cout << "Order ID: " << order.order_ID << std::endl;
         OrderBook* orderBook;
-           if (order.instrument == "Rose"){
-               orderBook = &RoseOrders;
-           }
+        // factory pattern?
+        if (order.instrument == "Rose"){
+            orderBook = &RoseOrders;
+        }
 
-           else if (order.instrument == "Lavender"){
-               orderBook = &LavenderOrders;
-           }
+        else if (order.instrument == "Lavender"){
+            orderBook = &LavenderOrders;
+        }
 
-            else if (order.instrument == "Orchid"){
-               orderBook = &OrchidOrders;
-            }
+        else if (order.instrument == "Orchid"){
+            orderBook = &OrchidOrders;
+        }
 
-            else if(order.instrument ==  "Lotus"){
-                orderBook  = &LotusOrders;
-            }
+        else if(order.instrument ==  "Lotus"){
+            orderBook  = &LotusOrders;
+        }
 
-            else if (order.instrument == "Tulip"){
-               orderBook = &TulipOrders;
-           }
-            if (order.Side == Order::BUY){
-                matchBuyOrder(*orderBook,order,execReport);
-            }else{
-                matchSellOrder(*orderBook,order,execReport);
-            }
+        else if (order.instrument == "Tulip"){
+            orderBook = &TulipOrders;
+        }
+
+
+        if (order.Side == Order::BUY){
+            matchBuyOrder(*orderBook,order,execReport);
+        }else{
+            matchSellOrder(*orderBook,order,execReport);
+        }
     }
 }
 
@@ -77,7 +82,7 @@ void MatchingEngine::processOrder(const std::string& line){
 
     // Validate Instrument
     std::unordered_set<std::string> validInstruments = {"Rose", "Lavender", "Lotus", "Tulip", "Orchid"};
-    if (validInstruments.find(instrument) == validInstruments.end()) {
+    if ( validInstruments.find(instrument) == validInstruments.end()) {
         isValid = false;
         rejectionReason += "Invalid Instrument. ";
     }
@@ -105,19 +110,24 @@ void MatchingEngine::processOrder(const std::string& line){
     }
 
     // If any validation failed, generate a Rejected execution report
-    if (!isValid) {
-        Order rejectedOrder(id, orderId, price, quantity, side, instrument, Order::REJECTED);
-        // rejectedOrder.rejectionReason = rejectionReason;
-        execReport.push_back(rejectedOrder);
-        return;
-    }
+    // if (!isValid) {
+    //     Order rejectedOrder(id, orderId, price, quantity, side, instrument, Order::REJECTED);
+    //     // rejectedOrder.rejectionReason = rejectionReason;
+    //     execReport.push_back(rejectedOrder);
+    //     return;
+    // }
 
     // // Create a valid order and pass it to MatchOrder
-    Order validOrder(id, orderId, price, quantity, side, instrument);
+    Order validOrder(id, orderId, price, quantity, side, instrument,rejectionReason);
     MatchOrder(validOrder);
 }
 
 void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std::vector<Order>& execReport){
+    newBuyOrder.order_ID = std::to_string(orders_processed);
+    std::cout << "Buy Order:" << newBuyOrder.order_ID << newBuyOrder.Client_ID << std::endl;
+    std::cout << "** Order Book:" << std::endl;
+    orderBook.displayOrders();
+
     bool match = true;
     while (match){
         std::optional<Order> sellOrder = orderBook.getSellOrder();
@@ -139,7 +149,7 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
                 newBuyOrder.price = sellOrder->price;
                 newBuyOrder.quantity = sellOrder->quantity;
                 execReport.push_back(newBuyOrder);
-                Order remaining_ord = Order(newBuyOrder.Client_ID,newBuyOrder.order_ID,ori_price,remaining_q,Order::BUY,newBuyOrder.instrument,Order::PFILL);
+                Order remaining_ord = Order(newBuyOrder.Client_ID,newBuyOrder.order_ID,ori_price,remaining_q,Order::BUY,newBuyOrder.instrument,newBuyOrder.reason,Order::PFILL);
                 sellOrder->state = Order::FILL;
                 execReport.push_back(*sellOrder);
                 newBuyOrder = remaining_ord;
@@ -151,7 +161,7 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
                 newBuyOrder.price = sellOrder->price;
                 execReport.push_back(newBuyOrder);
                 int remaining_q = sellOrder->quantity - newBuyOrder.quantity;
-                Order new_ord = Order(sellOrder->Client_ID,sellOrder->order_ID,sellOrder->price,remaining_q,Order::SELL,sellOrder->instrument,Order::NEW);
+                Order new_ord = Order(sellOrder->Client_ID,sellOrder->order_ID,sellOrder->price,remaining_q,Order::SELL,sellOrder->instrument,sellOrder->reason,Order::NEW);
                 orderBook.addOrder(new_ord);
                 sellOrder->state = Order::PFILL;
                 execReport.push_back(*sellOrder);
@@ -168,7 +178,6 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
             orderBook.addOrder(newBuyOrder);
             if (newBuyOrder.state==Order::NEW){
                 execReport.push_back(newBuyOrder);
-
             }
             break;
         }
@@ -177,6 +186,12 @@ void MatchingEngine::matchBuyOrder(OrderBook& orderBook, Order& newBuyOrder, std
 }
 
 void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, std::vector<Order>& execReport) {
+    newSellOrder.order_ID = std::to_string(orders_processed);
+    
+    std::cout << "Sell Order:" << newSellOrder.order_ID << newSellOrder.Client_ID << std::endl;
+    std::cout << "** Order Book:" << std::endl;
+    orderBook.displayOrders();
+
     bool match = true;
     while (match) {
         std::optional<Order> buyOrder = orderBook.getBuyOrder();
@@ -198,7 +213,7 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
                 newSellOrder.price = buyOrder->price;
                 newSellOrder.quantity = buyOrder->quantity;
                 execReport.push_back(newSellOrder);
-                Order new_ord = Order(newSellOrder.Client_ID, newSellOrder.order_ID,ori_price, remaining_q, Order::SELL, newSellOrder.instrument,Order::PFILL);
+                Order new_ord = Order(newSellOrder.Client_ID, newSellOrder.order_ID,ori_price, remaining_q, Order::SELL, newSellOrder.instrument, newSellOrder.reason,Order::PFILL);
                 buyOrder->state = Order::FILL;
                 execReport.push_back(*buyOrder);
                 newSellOrder = new_ord;
@@ -208,7 +223,7 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
                 newSellOrder.price = buyOrder->price;
                 execReport.push_back(newSellOrder);
                 int remaining_q = buyOrder->quantity - newSellOrder.quantity;
-                Order new_ord = Order(buyOrder->Client_ID, newSellOrder.order_ID,buyOrder->price, remaining_q, Order::BUY, buyOrder->instrument,Order::NEW);
+                Order new_ord = Order(buyOrder->Client_ID, newSellOrder.order_ID,buyOrder->price, remaining_q, Order::BUY, buyOrder->instrument, buyOrder->reason,Order::NEW);
                 orderBook.addOrder(new_ord);
                 buyOrder->state = Order::PFILL;
                 execReport.push_back(*buyOrder);
@@ -237,7 +252,7 @@ void MatchingEngine::matchSellOrder(OrderBook& orderBook, Order& newSellOrder, s
 
 void MatchingEngine::PrintReport() {
     std::cout << std::setw(10) << "Order ID"<<std::setw(15) << "Cl. Ord. ID" << std::setw(15) << "Instrument" << std::setw(10) << "Side"
-              << std::setw(12) << "ExecStatus" << std::setw(10) << "Quantity" << std::setw(10) << "Price" << std::endl;
+              << std::setw(12) << "ExecStatus" << std::setw(10) << "Quantity" << std::setw(10) << "Price" << std::setw(200) << "Rejected Reason (If any)" << std::endl;
 
     for (const auto& order : execReport) {
         std::string execStatus;
@@ -252,7 +267,7 @@ void MatchingEngine::PrintReport() {
         }
         std::cout << std::setw(10) << order.order_ID<< std::setw(15) << order.Client_ID<< std::setw(15) << order.instrument
                   << std::setw(10) << order.Side << std::setw(12) << execStatus << std::setw(10) << order.quantity
-                  << std::setw(10) << std::fixed << std::setprecision(2)<<order.price << std::endl;
+                  << std::setw(10) << std::fixed << std::setprecision(2)<<order.price << std::setw(200) << order.reason << std::endl;
     }
 
 }
@@ -265,7 +280,7 @@ void MatchingEngine::WriteToFile(const std::string& filename) {
         return;
     }
 
-    outputFile << "Order ID,Cl. Ord. ID,Instrument,Side,ExecStatus,Quantity,Price" << std::endl;
+    outputFile << "Order ID,Cl. Ord. ID,Instrument,Side,ExecStatus,Quantity,Price,Rejected Reason (If any)" << std::endl;
 
     for (const auto& order : execReport) {
         std::string execStatus;
@@ -281,7 +296,7 @@ void MatchingEngine::WriteToFile(const std::string& filename) {
 
         outputFile << order.order_ID << "," << order.Client_ID << "," << order.instrument
                    << "," << order.Side << "," << execStatus << "," << order.quantity
-                   << "," << std::fixed << std::setprecision(2) << order.price << std::endl;
+                   << "," << std::fixed << std::setprecision(2) << order.price << "," << order.reason << std::endl;
     }
 
     outputFile.close();

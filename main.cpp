@@ -10,6 +10,13 @@
 #include "OrderBook.h"
 #include "MatchingEngine.h"
 
+
+// TODO: 
+// 0. Order ID config
+// 1. Add reason for rejection
+// 2. Add timestamp
+// 3. Factory pattern 
+
 void readCSVFile(std::queue<std::string>& csvQueue, std::mutex& queueMutex,
                  std::condition_variable& cv, bool& stopFlag, const std::string& filename) {
     std::ifstream file(filename);
